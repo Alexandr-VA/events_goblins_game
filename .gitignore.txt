@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+.env
+.vscode/
+.idea/
+yarn-error.log
+.pnp/
+.pnp.js
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/cache/
+package-lock.json
