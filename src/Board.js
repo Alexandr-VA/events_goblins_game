@@ -16,11 +16,7 @@ export default class Board {
   initGoblin() {
     this.goblin = new Goblin();
     this.goblin.onMiss(() => {
-      console.log('Board: получен сигнал о промахе (таймаут)');
-      if (this.onMissCallback && this.isGameActive) {
-        console.log('Board: вызываем onMissCallback');
-        this.onMissCallback();
-      }
+      if (this.onMissCallback && this.isGameActive) this.onMissCallback();
       this.isSpawning = false;
     });
   }
@@ -39,18 +35,14 @@ export default class Board {
   }
 
   reset() {
-    console.log('Board: сброс');
-    if (this.goblin) {
-      this.goblin.destroy();
-    }
+    if (this.goblin) this.goblin.destroy();
     this.cells.forEach((cell) => {
-      cell.classList.remove('has-goblin', 'hit');
+      cell.classList.remove('has-goblin', 'hit', 'miss');
       cell.innerHTML = '';
-      // Удаляем молоток если есть
       const hammer = cell.querySelector('.hammer-strike');
-      if (hammer) {
-        hammer.remove();
-      }
+      if (hammer) hammer.remove();
+      const fig = cell.querySelector('.fig-miss');
+      if (fig) fig.remove();
     });
     this.isGameActive = true;
     this.isSpawning = false;
@@ -58,70 +50,42 @@ export default class Board {
   }
 
   spawnGoblin() {
-    console.log('Board: спавн гоблина');
-    if (!this.isGameActive) return;
-    if (this.isSpawning) {
-      console.log('Board: гоблин уже появляется, пропускаем');
-      return;
-    }
-    
-    if (this.goblin && this.goblin.isActive()) {
-      console.log('Board: гоблин еще жив, не спавним нового');
-      return;
-    }
-    
+    if (!this.isGameActive || this.isSpawning) return;
+    if (this.goblin && this.goblin.isActive()) return;
     this.isSpawning = true;
-    
     let newIndex;
     do {
       newIndex = Math.floor(Math.random() * this.cells.length);
     } while (this.goblin && this.cells[newIndex] === this.goblin.cell && this.cells.length > 1);
-    
-    const cell = this.cells[newIndex];
-    this.goblin.appear(cell);
+    this.goblin.appear(this.cells[newIndex]);
   }
 
-  hideGoblin() {
-    if (this.goblin) {
-      this.goblin.disappear(false);
-    }
-    this.isSpawning = false;
+  hideGoblin() { 
+    if (this.goblin) this.goblin.disappear(false); 
+    this.isSpawning = false; 
   }
 
   handleCellClick(index) {
-    console.log(`Board: клик по клетке ${index}`);
     if (!this.isGameActive) return;
-    
     const cell = this.cells[index];
     
-    // Проверяем, есть ли гоблин в этой клетке
     if (this.goblin && this.goblin.isActive() && this.goblin.cell === cell) {
       // Попали в гоблина!
-      console.log('Board: попали в гоблина!');
-      
-      // Показываем молоток в клетке
       this.showHammer(cell);
-      
-      // Эффект удара
       cell.classList.add('hit');
-      setTimeout(() => {
-        cell.classList.remove('hit');
-      }, 400);
-      
+      setTimeout(() => cell.classList.remove('hit'), 400);
       this.goblin.die();
       this.isSpawning = false;
-      if (this.onHitCallback) {
-        this.onHitCallback();
-      }
+      if (this.onHitCallback) this.onHitCallback();
     } else {
-      // Клик по пустой клетке - засчитываем промах
-      console.log('Board: промах - клик по пустой клетке');
+      // Клик мимо гоблина - показываем Fig
+      this.showFig(cell);
       
-      if (this.onMissCallback && this.isGameActive) {
-        console.log('Board: вызываем onMissCallback (клик мимо)');
-        this.onMissCallback();
-      }
+      // Добавляем эффект промаха
+      cell.classList.add('miss');
+      setTimeout(() => cell.classList.remove('miss'), 500);
       
+      if (this.onMissCallback && this.isGameActive) this.onMissCallback();
       if (this.goblin && this.goblin.isActive()) {
         this.goblin.disappear(false);
         this.isSpawning = false;
@@ -129,54 +93,45 @@ export default class Board {
     }
   }
 
-  /**
-   * Показывает анимацию молотка в клетке
-   */
   showHammer(cell) {
-    // Удаляем старый молоток если есть
     const oldHammer = cell.querySelector('.hammer-strike');
-    if (oldHammer) {
-      oldHammer.remove();
-    }
-    
-    // Создаем элемент молотка
+    if (oldHammer) oldHammer.remove();
     const hammer = document.createElement('div');
     hammer.className = 'hammer-strike';
     cell.appendChild(hammer);
+    setTimeout(() => { if (hammer.parentNode) hammer.remove(); }, 500);
+  }
+
+  /**
+   * Показывает картинку Fig.png при клике мимо гоблина
+   */
+  showFig(cell) {
+    // Удаляем старую картинку если есть
+    const oldFig = cell.querySelector('.fig-miss');
+    if (oldFig) oldFig.remove();
     
-    // Удаляем молоток после анимации
+    // Создаем элемент с картинкой
+    const fig = document.createElement('div');
+    fig.className = 'fig-miss';
+    cell.appendChild(fig);
+    
+    // Удаляем после анимации
     setTimeout(() => {
-      if (hammer.parentNode) {
-        hammer.remove();
-      }
-    }, 500);
+      if (fig.parentNode) fig.remove();
+    }, 600);
   }
 
-  onGoblinHit(callback) {
-    this.onHitCallback = callback;
-  }
-
-  onGoblinMiss(callback) {
-    console.log('Board: установлен onMissCallback');
-    this.onMissCallback = callback;
-  }
+  onGoblinHit(callback) { this.onHitCallback = callback; }
+  onGoblinMiss(callback) { this.onMissCallback = callback; }
 
   setGameActive(active) {
     this.isGameActive = active;
-    if (!active && this.goblin) {
-      this.goblin.disappear(false);
-    }
-    if (!active) {
-      this.isSpawning = false;
-    }
+    if (!active && this.goblin) this.goblin.disappear(false);
+    if (!active) this.isSpawning = false;
   }
 
   destroy() {
-    if (this.goblin) {
-      this.goblin.destroy();
-    }
-    this.cells.forEach((cell) => {
-      cell.replaceWith(cell.cloneNode(true));
-    });
+    if (this.goblin) this.goblin.destroy();
+    this.cells.forEach((cell) => cell.replaceWith(cell.cloneNode(true)));
   }
 }
