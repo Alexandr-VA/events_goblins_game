@@ -1,18 +1,17 @@
 import Board from './Board';
 import Score from './Score';
+import { MAX_MISSES, SPAWN_INTERVAL } from './constants';
 
 export default class Game {
   constructor(boardElement) {
-    console.log('Game: создание игры');
     this.board = new Board(boardElement);
     this.score = new Score();
     this.misses = 0;
-    this.maxMisses = 5;
+    this.maxMisses = MAX_MISSES;
     this.isRunning = false;
     this.isStarted = false;
     this.goblinInterval = null;
     
-    // Получаем элементы с проверкой
     this.startButton = document.getElementById('start-btn');
     this.restartButton = document.getElementById('restart-btn');
     this.scoreElement = document.getElementById('score');
@@ -20,33 +19,25 @@ export default class Game {
     this.gameOverElement = document.getElementById('game-over');
     this.finalScoreElement = document.getElementById('final-score');
     
-    // Проверяем, что кнопка найдена
+    // Критические ошибки выбрасываем через throw
     if (!this.startButton) {
-      console.error('Кнопка #start-btn не найдена в DOM!');
+      throw new Error('Кнопка #start-btn не найдена в DOM!');
     }
     if (!this.restartButton) {
-      console.error('Кнопка #restart-btn не найдена в DOM!');
+      throw new Error('Кнопка #restart-btn не найдена в DOM!');
     }
     
     this.board.onGoblinHit(() => {
-      console.log('Game: попадание!');
       this.handleGoblinHit();
     });
     
     this.board.onGoblinMiss(() => {
-      console.log('Game: промах!');
       this.handleGoblinMiss();
     });
     
-    // Вешаем обработчики на кнопки (с проверкой)
-    if (this.startButton) {
-      this.startButton.addEventListener('click', () => this.start());
-    }
-    if (this.restartButton) {
-      this.restartButton.addEventListener('click', () => this.restart());
-    }
+    this.startButton.addEventListener('click', () => this.start());
+    this.restartButton.addEventListener('click', () => this.restart());
     
-    // Изначально поле заблокировано
     this.setBoardDisabled(true);
     this.updateUI();
   }
@@ -54,16 +45,13 @@ export default class Game {
   start() {
     if (this.isStarted) return;
     
-    console.log('Game: старт по кнопке');
     this.isStarted = true;
     this.isRunning = true;
     this.score.reset();
     this.misses = 0;
     
-    if (this.startButton) {
-      this.startButton.disabled = true;
-      this.startButton.textContent = '⏳ Игра идет...';
-    }
+    this.startButton.disabled = true;
+    this.startButton.textContent = '⏳ Игра идет...';
     
     if (this.gameOverElement) {
       this.gameOverElement.classList.add('hidden');
@@ -80,40 +68,33 @@ export default class Game {
     if (this.goblinInterval) {
       clearInterval(this.goblinInterval);
     }
-    // Запускаем первого гоблина сразу
     this.board.spawnGoblin();
     
-    // Затем каждую секунду пытаемся спавнить нового
     this.goblinInterval = setInterval(() => {
       if (this.isRunning) {
         this.board.spawnGoblin();
       }
-    }, 1000);
+    }, SPAWN_INTERVAL);
   }
 
   handleGoblinHit() {
-    console.log('Game: обработка попадания');
     if (!this.isRunning) return;
     this.score.addPoints(1);
     this.updateUI();
   }
 
   handleGoblinMiss() {
-    console.log(`Game: обработка промаха, текущее значение: ${this.misses}`);
     if (!this.isRunning) return;
     
     this.misses += 1;
-    console.log(`Game: промахов стало: ${this.misses}`);
     this.updateUI();
     
     if (this.misses >= this.maxMisses) {
-      console.log('Game: игра окончена!');
       this.endGame();
     }
   }
 
   endGame() {
-    console.log('Game: завершение игры');
     this.isRunning = false;
     this.isStarted = false;
     
@@ -126,10 +107,8 @@ export default class Game {
     this.board.hideGoblin();
     this.setBoardDisabled(true);
     
-    if (this.startButton) {
-      this.startButton.disabled = false;
-      this.startButton.textContent = '🎮 Играть снова';
-    }
+    this.startButton.disabled = false;
+    this.startButton.textContent = '🎮 Играть снова';
     
     this.showGameOver();
   }
@@ -149,7 +128,6 @@ export default class Game {
     }
     if (this.missesElement) {
       this.missesElement.textContent = this.misses;
-      console.log(`UI обновлен: промахи = ${this.missesElement.textContent}`);
     }
   }
 
@@ -165,16 +143,12 @@ export default class Game {
   }
 
   restart() {
-    console.log('Game: рестарт');
-    
     if (this.gameOverElement) {
       this.gameOverElement.classList.add('hidden');
     }
     
-    if (this.startButton) {
-      this.startButton.textContent = '🎮 Начать игру';
-      this.startButton.disabled = false;
-    }
+    this.startButton.textContent = '🎮 Начать игру';
+    this.startButton.disabled = false;
     
     this.isStarted = false;
     this.isRunning = false;

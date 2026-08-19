@@ -1,3 +1,5 @@
+import { GOBLIN_LIFETIME } from './constants';
+
 export default class Goblin {
   constructor() {
     this.element = null;
@@ -5,7 +7,7 @@ export default class Goblin {
     this.isAlive = false;
     this.timeout = null;
     this.onMissCallback = null;
-    this.lifetime = 1000;
+    this.lifetime = GOBLIN_LIFETIME;
   }
 
   createElement() {
@@ -15,26 +17,22 @@ export default class Goblin {
   }
 
   appear(cell) {
-    console.log('Goblin: появляется');
     if (this.isAlive) {
       this.die();
     }
     
     this.cell = cell;
     this.element = this.createElement();
-    this.cell.appendChild(this.element);
+    this.cell.append(this.element); // append вместо appendChild
     this.cell.classList.add('has-goblin');
     this.isAlive = true;
     
-    // Таймаут на исчезновение
     this.timeout = setTimeout(() => {
-      console.log('Goblin: таймаут - исчезает');
       this.disappear(true);
     }, this.lifetime);
   }
 
   disappear(isMiss = false) {
-    console.log(`Goblin: исчезает, isMiss=${isMiss}`);
     if (!this.isAlive) return;
     
     this.clearTimeout();
@@ -51,13 +49,11 @@ export default class Goblin {
     this.cell = null;
     
     if (isMiss && this.onMissCallback) {
-      console.log('Goblin: вызываем onMissCallback (промах)');
       this.onMissCallback();
     }
   }
 
   die() {
-    console.log('Goblin: убит!');
     if (!this.isAlive) return;
     
     this.clearTimeout();
